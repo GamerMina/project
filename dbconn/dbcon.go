@@ -21,6 +21,9 @@ func GetEnv(key, fallback string) string {
 	}
 	return val
 }
+func Secret() string {
+	return os.Getenv(Secret())
+}
 
 func LoadAppCfg() AppConfig {
 	dsnstruct := types.DbConf{
