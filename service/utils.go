@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -53,7 +54,7 @@ func (s *Services) generateLuhnCheckDigit(number string) (int, error) {
 	return luhnDigit, nil
 }
 
-// Генерация 16-значного номера карты
+// Генерация 15-значного номера карты
 func (s *Services) generateCardNumber() (string, error) {
 	rand.Seed(time.Now().UnixNano())
 
@@ -84,10 +85,11 @@ func HashCardData(pan, secret string) string {
 	hash := hex.EncodeToString(h.Sum(nil))
 	return hash
 }
-func generateCVV() int {
+func GenerateCVV() string {
 	rand.Seed(time.Now().UnixNano())
 	number := rand.Intn(900) + 100 // 100–999
-	return number
+	numberString := strconv.Itoa(number)
+	return numberString
 }
 
 // HashCVV Хеширование для CVV через bcrypt
@@ -125,4 +127,11 @@ func HidePAN(s string) string {
 	}
 	hidenPAN := string(runes)
 	return hidenPAN
+}
+func AddYearsMonths(years int, months int) (int, int) {
+	now := time.Now()
+	newDate := now.AddDate(years, months, 0)
+	year := newDate.Year() % 100  // последние 2 цифры года
+	month := int(newDate.Month()) // месяц от 1 до 12
+	return year, month
 }

@@ -21,4 +21,5 @@ func main() {
 	router.InitRoutes(r, newHandler)
 
 	r.Run("localhost:8080")
+
 }

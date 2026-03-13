@@ -7,20 +7,20 @@ type DbConf struct {
 	DbName     string
 	DbPort     string
 }
-
 type Card struct {
-	ID             int     `json:"id"`
-	IDAccount      int     `json:"id_account"`       // ID к которому она привязана
-	CardNumber     string  `json:"card_number" `     // номер карты (16 цифр)
-	CardNumberHash string  `json:"card_number_Hash"` // кеш номера карты сгенерированный из даты пана и cvv
-	Holder         string  `json:"holder" `          // владелец карты на латинском
-	ExpMonth       int     `json:"exp_month" `       // месяц окончания
-	ExpYear        int     `json:"exp_year" `        // год окончания
-	CVV            string  `json:"cvv" `             // CVV код
-	CVVHash        string  `json:"cvv_Hash" `        // CVV код который мы отправляем в БД
-	Balance        float64 `json:"balance" `         // баланс
-	Currency       string  `json:"currency" `        // валюта
-	Status         string  `json:"status" `          // active / blocked
+	ID             int     `json:"id" gorm:"column:id"`
+	IDAccount      int     `json:"id_account" gorm:"column:account_id"`      // ID к которому она привязана
+	CardNumber     string  `json:"card_number" gorm:"-"`                     // номер карты (16 цифр)
+	CardNumberHash string  `json:"card_number_hash" gorm:"column:pan_hash"`  // кеш номера карты сгенерированный из даты пана и cvv
+	Holder         string  `json:"holder" gorm:"column:cardholder_name"`     // владелец карты на латинском
+	ExpMonth       int     `json:"exp_month" gorm:"column:expiration_month"` // месяц окончания
+	ExpYear        int     `json:"exp_year" gorm:"column:expiration_year"`   // год окончания
+	CVV            string  `json:"cvv" gorm:"-"`                             // CVV код
+	CVVHash        string  `json:"cvv_hash" gorm:"column:cvv_hash"`          // CVV код который мы отправляем в БД
+	CardType       string  `json:"card_type" gorm:"column:card_type"`
+	Balance        float64 `json:"balance" gorm:"column:balance"`    // баланс
+	Currency       string  `json:"currency" gorm:"column:currency"`  // валюта
+	Status         string  `json:"status" gorm:"column:card_status"` // active / blocked
 }
 type Account struct {
 	ID            int64   `gorm:"id"             json:"id"`             //id
