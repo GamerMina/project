@@ -26,7 +26,16 @@ func (h *Handler) Registration(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	card := service.FillingCard(input, h.Service.GenerateCard())
-	//TODO: сохранение в БД
+
+	card, err := h.Service.FillingCard(input, h.Service.GenerateCard())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.Service.SaveDB(card); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "registration success"})
 }

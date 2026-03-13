@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
-	"projcet/types"
 	"strconv"
 	"time"
 )
@@ -55,7 +54,7 @@ func (s *Services) generateLuhnCheckDigit(number string) (int, error) {
 	return luhnDigit, nil
 }
 
-// Генерация 16-значного номера карты
+// Генерация 15-значного номера карты
 func (s *Services) generateCardNumber() (string, error) {
 	rand.Seed(time.Now().UnixNano())
 
@@ -135,21 +134,4 @@ func AddYearsMonths(years int, months int) (int, int) {
 	year := newDate.Year() % 100  // последние 2 цифры года
 	month := int(newDate.Month()) // месяц от 1 до 12
 	return year, month
-}
-func FillingCard(input types.Card, card types.Card) types.Card {
-	filler := types.Card{
-
-		IDAccount:      input.IDAccount,
-		CardNumber:     card.CardNumber,
-		CardNumberHash: card.CardNumberHash,
-		Holder:         input.Holder,
-		ExpMonth:       card.ExpMonth,
-		ExpYear:        card.ExpYear,
-		CVV:            card.CVV,
-		CVVHash:        card.CVVHash,
-		Balance:        0, // as default
-		Currency:       input.Currency,
-		Status:         "active", // as default
-	}
-	return filler
 }

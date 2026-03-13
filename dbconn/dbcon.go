@@ -22,16 +22,17 @@ func GetEnv(key, fallback string) string {
 	return val
 }
 func Secret() string {
-	return os.Getenv(Secret())
+
+	return "Anvar"
 }
 
 func LoadAppCfg() AppConfig {
 	dsnstruct := types.DbConf{
 		DbHost:     GetEnv("DB_HOST", "localhost"),
 		DbUser:     GetEnv("DB_USER", "postgres"),
-		DbPassword: GetEnv("DB_PASSWORD", "pass"),
-		DbName:     GetEnv("DB_NAME", "postgres"),
-		DbPort:     GetEnv("DB_PORT", "5432"),
+		DbPassword: GetEnv("DB_PASSWORD", "admin"),
+		DbName:     GetEnv("DB_NAME", "humo"),
+		DbPort:     GetEnv("DB_PORT", "5433"),
 	}
 	return AppConfig{Db: dsnstruct}
 }
