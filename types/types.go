@@ -23,7 +23,7 @@ type Card struct {
 	Status         string  `json:"status" gorm:"column:card_status"` // active / blocked
 }
 type Account struct {
-	ID            int64   `gorm:"id"             json:"id"`             //id
+	ID            int     `gorm:"id"             json:"id"`             //id
 	FirstName     string  `gorm:"st_name"        json:"first_name"`     //имя на кириллице
 	LastName      string  `gorm:"last_name"      json:"last_name"`      //фамилия на кириллице
 	DateOfBirth   string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др

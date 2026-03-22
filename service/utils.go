@@ -72,7 +72,7 @@ func (s *Services) generateCardNumber() (string, error) {
 	}
 	num := number + fmt.Sprintf("%d", checkDigit)
 	num, err = s.ValidLuhn(num)
-
+	//TODO: пересмотреть обработку ошибок
 	return num, nil
 }
 
