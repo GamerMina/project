@@ -12,6 +12,6 @@ func InitRoutes(r *gin.Engine, H *handler.Handler) {
 	admin := r.Group("/admin")
 	{
 		admin.POST("/register", H.Registration)
-
+		admin.POST("/check", H.HasCardByID)
 	}
 }

@@ -16,25 +16,42 @@ func NewServices(rep *repository.Repository) *Services {
 	return &Services{Repository: rep}
 }
 
-func (s *Services) GenerateCard() types.Card { //Todo: хеширование или шифрование данных дописать//done
+func (s *Services) GenerateCard() (types.Card, error) {
 	var card types.Card
-	card.CardNumber, _ = s.generateCardNumber()
-	card.CardNumberHash = HashCardData(card.CardNumber, dbconn.Secret())
-	card.CardNumber = HidePAN(card.CardNumber)
-	card.CVVHash, _ = HashCVV(GenerateCVV())
-	_, card.ExpMonth = AddYearsMonths(5, 0) //5 лет это пример
-	card.ExpYear, _ = AddYearsMonths(5, 0)  // 5 лет это пример
-	return card
+	cardNum, err := s.generateCardNumber()
+	if err != nil {
+		return card, err
+	}
+
+	hiddenCardNum := HidePAN(cardNum)
+
+	hashCVV, err := HashCVV(GenerateCVV())
+	if err != nil {
+		return card, err
+	}
+
+	expYear, expMonth := AddYearsMonths(5, 0) //5 лет это пример
+
+	card = types.Card{
+		CardNumber:     hiddenCardNum,
+		CardNumberHash: HashCardData(cardNum, dbconn.Secret()),
+		Holder:         "",
+		ExpMonth:       expMonth,
+		ExpYear:        expYear,
+		CVVHash:        hashCVV,
+	}
+
+	return card, nil
 }
-func (s *Services) FillingCard(input types.Card, card types.Card) (types.Card, error) {
-	id := input.IDAccount
+func (s *Services) FillingCard(input types.Account, card types.Card) (types.Card, error) {
+	id := input.ID // Acount id
 	Holder, err := s.Repository.GetAccount(id)
 	// превращаю его в тип ИМЯ ФАМИЛИЯ
 	holder := fmt.Sprintf("%s %s", Holder.FirstName, Holder.LastName)
 	holder = strings.ToUpper(holder)
 
 	filler := types.Card{
-		IDAccount:      input.IDAccount,
+		IDAccount:      input.ID,
 		CardNumber:     card.CardNumber,
 		CardNumberHash: card.CardNumberHash,
 		Holder:         holder,
@@ -42,13 +59,26 @@ func (s *Services) FillingCard(input types.Card, card types.Card) (types.Card, e
 		ExpYear:        card.ExpYear,
 		CVV:            card.CVV,
 		CVVHash:        card.CVVHash,
-		Balance:        0,        // default
-		Currency:       "TJS",    // input.Currency, используем если карты будут не только TJS
-		Status:         "active", // default
+		Balance:        0,                      // default
+		Currency:       types.CurrencyTJS,      // input.Currency, используем если карты будут не только TJS
+		Status:         types.CardStatusActive, // default
 	}
 	return filler, err
 }
 func (s *Services) SaveDB(card types.Card) error {
+
 	err := s.Repository.AddCard(card)
 	return err
+}
+func (s *Services) HasCardByID(id int) (bool, error) {
+	var check bool
+	card, err := s.Repository.HasCardByID(id)
+	if err != nil {
+		return false, err
+	}
+	if card == (types.Card{}) {
+		check = true
+	}
+
+	return check, err
 }
