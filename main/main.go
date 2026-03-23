@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"projcet/dbconn"
-	"projcet/handler"
-	"projcet/repository"
-	"projcet/router"
-	"projcet/service"
+	"project/dbconn"
+	"project/handler"
+	"project/repository"
+	"project/router"
+	"project/service"
 )
 
 func main() {

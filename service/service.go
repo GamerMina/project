@@ -2,9 +2,9 @@ package service
 
 import (
 	"fmt"
-	"projcet/dbconn"
-	"projcet/repository"
-	"projcet/types"
+	"project/dbconn"
+	"project/repository"
+	"project/types"
 	"strings"
 )
 

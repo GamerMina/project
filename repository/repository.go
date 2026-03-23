@@ -2,7 +2,7 @@ package repository
 
 import (
 	"gorm.io/gorm"
-	"projcet/types"
+	"project/types"
 )
 
 type Repository struct {

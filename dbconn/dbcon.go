@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm/schema"
 	"log"
 	"os"
-	"projcet/types"
+	"project/types"
 )
 
 type AppConfig struct {

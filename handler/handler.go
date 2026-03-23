@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"projcet/service"
-	"projcet/types"
+	"project/service"
+	"project/types"
 )
 
 type Handler struct {
@@ -35,7 +35,7 @@ func (h *Handler) Registration(c *gin.Context) {
 		})
 		return
 	}
-	log.Println("hascardbyID", err)
+	log.Println("hasCardByID", err)
 
 	if card, err = h.Service.GenerateCard(input); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
