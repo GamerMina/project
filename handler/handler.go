@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"project/service"
 	"project/types"
@@ -35,23 +34,15 @@ func (h *Handler) Registration(c *gin.Context) {
 		})
 		return
 	}
-	log.Println("hasCardByID", err)
-
 	if card, err = h.Service.GenerateCard(input); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-		log.Println("generate card", err)
 	}
-
 	if err := h.Service.SaveDB(card); err != nil {
-
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	log.Println("saveBD", err)
-
 	c.JSON(http.StatusOK, gin.H{"message": "registration success"})
-
 }
 
 func (h *Handler) HasCardByID(c *gin.Context) {

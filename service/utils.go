@@ -128,6 +128,8 @@ func HidePAN(s string) string {
 	hidenPAN := string(runes)
 	return hidenPAN
 }
+
+// AddYearsMonths years that months добовляет в функцию
 func AddYearsMonths(years int, months int) (int, int) {
 	now := time.Now()
 	newDate := now.AddDate(years, months, 0)
