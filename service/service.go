@@ -16,7 +16,7 @@ func NewServices(rep *repository.Repository) *Services {
 	return &Services{Repository: rep}
 }
 
-func (s *Services) GenerateCard() (types.Card, error) {
+func (s *Services) GenerateCard(input types.Account) (types.Card, error) {
 	var card types.Card
 	cardNum, err := s.generateCardNumber()
 	if err != nil {
@@ -40,7 +40,10 @@ func (s *Services) GenerateCard() (types.Card, error) {
 		ExpYear:        expYear,
 		CVVHash:        hashCVV,
 	}
-
+	card, err = s.FillingCard(input, card)
+	if err != nil {
+		return types.Card{}, err
+	}
 	return card, nil
 }
 func (s *Services) FillingCard(input types.Account, card types.Card) (types.Card, error) {
@@ -70,15 +73,15 @@ func (s *Services) SaveDB(card types.Card) error {
 	err := s.Repository.AddCard(card)
 	return err
 }
-func (s *Services) HasCardByID(id int) (bool, error) {
+func (s *Services) HasCardByID(id int) bool {
 	var check bool
 	card, err := s.Repository.HasCardByID(id)
 	if err != nil {
-		return false, err
+		return false
 	}
 	if card == (types.Card{}) {
 		check = true
 	}
 
-	return check, err
+	return check
 }
