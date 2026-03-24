@@ -8,8 +8,12 @@ import (
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
+	"net/mail"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 )
 
 // Проверка по алгоритму Luhn
@@ -76,11 +80,11 @@ func (s *Services) generateCardNumber() (string, error) {
 	return num, nil
 }
 
-// HashCardData Хеширование
-func HashCardData(pan, secret string) string {
+// HashData Хеширование
+func HashData(text, secret string) string {
 
 	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(pan))
+	h.Write([]byte(text))
 
 	hash := hex.EncodeToString(h.Sum(nil))
 	return hash
@@ -136,4 +140,65 @@ func AddYearsMonths(years int, months int) (int, int) {
 	year := newDate.Year() % 100  // последние 2 цифры года
 	month := int(newDate.Month()) // месяц от 1 до 12
 	return year, month
+}
+
+// ParcePhoneNumber парсим номер телефона
+func ParcePhoneNumber(input string) string {
+	re := regexp.MustCompile(`\D`)
+	number := re.ReplaceAllString(input, "")
+	if number == "" {
+		return ""
+	}
+	if strings.HasPrefix(number, "992") {
+		return "+" + number
+	}
+	if len(number) > 9 {
+		number = number[len(number)-9:]
+	}
+	return "+992" + number
+}
+
+// ParseName Parse name
+func ParseName(name, surname string) error {
+	if IsValidName(name) == false {
+		return errors.New("name contain some symbols")
+	}
+	if IsValidName(surname) == false {
+		return errors.New("name contain some symbols")
+	}
+	return nil
+}
+
+// IsValidName  парсит стринг
+func IsValidName(s string) bool {
+	for _, r := range s {
+		if !(unicode.IsLetter(r) || r == ' ' || r == '-') {
+			return false
+		}
+	}
+	return true
+}
+
+// ParseMail Parcs mail
+func ParseMail(email string) error {
+	_, err := mail.ParseAddress(email)
+	return err
+}
+func GetAge(dob string) (int, error) {
+	// парсим дату
+	birthDate, err := time.Parse("2006-01-02", dob)
+	if err != nil {
+		return 0, fmt.Errorf("неверный формат даты: %v", err)
+	}
+
+	now := time.Now()
+	age := now.Year() - birthDate.Year()
+
+	// проверяем был ли ДР в этом году
+	if now.Month() < birthDate.Month() ||
+		(now.Month() == birthDate.Month() && now.Day() < birthDate.Day()) {
+		age--
+	}
+
+	return age, nil
 }

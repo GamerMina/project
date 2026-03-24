@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"project/dbconn"
 	"project/repository"
@@ -34,7 +35,7 @@ func (s *Services) GenerateCard(input types.Account) (types.Card, error) {
 
 	card = types.Card{
 		CardNumber:     hiddenCardNum,
-		CardNumberHash: HashCardData(cardNum, dbconn.Secret()),
+		CardNumberHash: HashData(cardNum, dbconn.Secret()),
 		Holder:         "",
 		ExpMonth:       expMonth,
 		ExpYear:        expYear,
@@ -68,10 +69,35 @@ func (s *Services) FillingCard(input types.Account, card types.Card) (types.Card
 	}
 	return filler, err
 }
-func (s *Services) SaveDB(card types.Card) error {
+func (s *Services) AccountRegistration(input types.Account) (types.Account, error) {
+	age, err := GetAge(input.DateOfBirth)
+	if err != nil {
+		return types.Account{}, err
+	}
+	if age < types.MinAgeToCreateAccount {
+		return types.Account{}, errors.New("you are less than 16 ")
+	}
+	input.PhoneNumber = ParcePhoneNumber(input.PhoneNumber)
+	if err := ParseName(input.FirstName, input.LastName); err != nil {
+		return types.Account{}, err
+	}
+	if err := ParseMail(input.Email); err != nil {
+		return types.Account{}, err
+	}
+	input.Password = HashData(input.Password, dbconn.Secret())
 
-	err := s.Repository.AddCard(card)
-	return err
+	err = s.SaveAccountDB(input)
+
+	return input, err
+}
+func (s *Services) SaveAccountDB(account types.Account) error {
+	return s.Repository.AddAccount(account)
+}
+
+//todo сохранить эту новую карту
+
+func (s *Services) SaveCardDB(card types.Card) error {
+	return s.Repository.AddCard(card)
 }
 func (s *Services) HasCardByID(id int) bool {
 	var check bool

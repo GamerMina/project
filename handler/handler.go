@@ -19,11 +19,30 @@ func NewHandler(engine *gin.Engine, services *service.Services) *Handler {
 		Service: services,
 	}
 }
-func (h *Handler) Registration(c *gin.Context) {
+func (h *Handler) AccountRegistration(c *gin.Context) {
+	input := types.Account{}
+	var err error
+	/* i need from input:
+	FirstName        имя на кириллице
+	LastName         фамилия на кириллице
+	DateOfBirth      Др
+	PhoneNumber      номер телефона в виде 12 чисел с +ом (если не так то само появиться	)
+	Email            gmail
+	Password         пароль   4 значный*/
+	if err = c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err = h.Service.SaveAccountDB(input); err != nil {
+		c.JSON(200, gin.H{"message": "registration success"})
+	}
+}
+func (h *Handler) CardRegistration(c *gin.Context) {
 	input := types.Account{}
 	card := types.Card{}
 	var check bool
 	var err error
+	// нам надо только id
 	if err = c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -38,7 +57,7 @@ func (h *Handler) Registration(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.Service.SaveDB(card); err != nil {
+	if err := h.Service.SaveCardDB(card); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -53,3 +72,22 @@ func (h *Handler) HasCardByID(c *gin.Context) {
 		return
 	}
 }
+
+
+
+
+
+c
+
+
+
+
+
+
+
+
+
+
+
+
+
