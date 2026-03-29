@@ -208,7 +208,7 @@ func GetAge(DateOfBirth string) (int, error) {
 	return age, nil
 }
 
-// TransferMoney Transfer balance
+// TransferMoney Transfer баланс именно 1 фунцией чтобы не было проблем по типо того что на 1 аккауете деньги снялись а на 2 не прибавились при каких либо проблемах с нашей стороны
 func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amount types.Balance) (types.Balance, types.Balance, error) {
 	var err error
 	if balanceFirst < amount {
@@ -218,4 +218,20 @@ func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amou
 	balanceFirst -= amount
 	balanceSecend += amount
 	return balanceFirst, balanceSecend, err
+}
+
+func ValidateAccountToAccountTransfer(senderPhone string, receiverPhone string, amount types.Balance) error {
+	if senderPhone == "" {
+		return errors.New("invalid sender phone")
+	}
+	if receiverPhone == "" {
+		return errors.New("invalid receiver phone")
+	}
+	if amount <= 0 {
+		return errors.New("amount must be positive")
+	}
+	if senderPhone == receiverPhone {
+		return errors.New("cannot transfer to yourself")
+	}
+	return nil
 }
