@@ -93,9 +93,6 @@ func (s *Services) AccountRegistration(input types.Account) (types.Account, erro
 func (s *Services) SaveAccountDB(account types.Account) error {
 	return s.Repository.AddAccount(account)
 }
-
-//todo сохранить эту новую карту
-
 func (s *Services) SaveCardDB(card types.Card) error {
 	return s.Repository.AddCard(card)
 }
@@ -110,4 +107,274 @@ func (s *Services) HasCardByID(id int) bool {
 	}
 
 	return check
+}
+func (s *Services) BlockCardByPhone(input types.BlockCardByPhone) error {
+	var err error
+
+	input.PhoneNumber = ParcePhoneNumber(input.PhoneNumber)
+	if input.PhoneNumber == "" {
+		return errors.New("invalid phone number")
+	}
+
+	account, err := s.Repository.GetAccountByPhone(input.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	ok, err := CompareHash(account.Password, input.Password)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("password incorrect")
+	}
+
+	if account.AccountStatus != "active" {
+		return errors.New("account is not active")
+	}
+
+	err = s.Repository.BlockCardByAccountID(account.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (s *Services) ActivateCardByPhone(input types.BlockCardByPhone) error {
+	var err error
+
+	input.PhoneNumber = ParcePhoneNumber(input.PhoneNumber)
+	if input.PhoneNumber == "" {
+		return errors.New("invalid phone number")
+	}
+
+	account, err := s.Repository.GetAccountByPhone(input.PhoneNumber)
+	if err != nil {
+		return err
+	}
+
+	ok, err := CompareHash(account.Password, input.Password)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("password incorrect")
+	}
+
+	if account.AccountStatus != "active" {
+		return errors.New("account is not active")
+	}
+
+	err = s.Repository.ActivateCardByAccountID(account.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (s *Services) MoneyTransferAccountToAccount(transfer types.MoneyTransferAccountToAccount) error {
+	var sender types.Account
+	var receiver types.Account
+	var err error
+	// нормализуем телефоны
+	transfer.PhoneNumberSender = ParcePhoneNumber(transfer.PhoneNumberSender)
+	transfer.PhoneNumberReceiver = ParcePhoneNumber(transfer.PhoneNumberReceiver)
+	// получаем отправителя
+	err = s.Repository.Connection.Table("bank_accounts").
+		Where("phone_number = ?", transfer.PhoneNumberSender).
+		First(&sender).Error
+	if err != nil {
+		return err
+	}
+	// получаем получателя
+	err = s.Repository.Connection.Table("bank_accounts").
+		Where("phone_number = ?", transfer.PhoneNumberReceiver).
+		First(&receiver).Error
+	if err != nil {
+		return err
+	}
+	// проверка пароля
+	ok, err := CompareHash(sender.Password, transfer.PasswordSender)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("password incorrect")
+	}
+	// перевод денег
+	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
+	if err != nil {
+		return err
+	}
+	// вызываем репозиторий
+	err = s.Repository.TransferMoneyTransaction(sender.ID, receiver.ID, newSenderBalance, newReceiverBalance)
+	if err != nil {
+		return err
+	}
+	if transfer.Amount <= 0 {
+		return errors.New("amount must be positive")
+	}
+	if transfer.PhoneNumberSender == transfer.PhoneNumberReceiver {
+		return errors.New("cannot transfer to yourself")
+	}
+	return nil
+}
+func (s *Services) MoneyTransferAccountToCard(transfer types.MoneyTransferAccountToCard) error {
+	var err error
+
+	transfer.PhoneNumberSender = ParcePhoneNumber(transfer.PhoneNumberSender)
+
+	if transfer.PhoneNumberSender == "" {
+		return errors.New("invalid sender phone")
+	}
+	if transfer.Amount <= 0 {
+		return errors.New("amount must be greater than 0")
+	}
+
+	sender, err := s.Repository.GetAccountByPhone(transfer.PhoneNumberSender)
+	if err != nil {
+		return err
+	}
+
+	ok, err := CompareHash(sender.Password, transfer.PasswordSender)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("password incorrect")
+	}
+
+	cardHash := HashData(transfer.CardReceiver, dbconn.Secret())
+
+	receiver, err := s.Repository.GetCardByNumberHash(cardHash)
+	if err != nil {
+		return err
+	}
+
+	if sender.AccountStatus != "active" {
+		return errors.New("sender account is not active")
+	}
+	if receiver.Status != "active" {
+		return errors.New("receiver card is not active")
+	}
+	if sender.Currency != receiver.Currency {
+		return errors.New("currencies do not match")
+	}
+	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
+	if err != nil {
+		return err
+	}
+	return s.Repository.TransferAccountToCard(
+		sender.ID,
+		receiver.ID,
+		newSenderBalance,
+		newReceiverBalance,
+	)
+}
+func (s *Services) MoneyTransferCardToAccount(transfer types.MoneyTransferCardToAccount) error {
+	var err error
+
+	transfer.PhoneNumberReceiver = ParcePhoneNumber(transfer.PhoneNumberReceiver)
+
+	if transfer.PhoneNumberReceiver == "" {
+		return errors.New("invalid receiver phone")
+	}
+	if transfer.Amount <= 0 {
+		return errors.New("amount must be greater than 0")
+	}
+
+	cardHash := HashData(transfer.CardSender, dbconn.Secret())
+
+	sender, err := s.Repository.GetCardByNumberHash(cardHash)
+	if err != nil {
+		return err
+	}
+
+	ok, err := CompareHash(sender.CVVHash, transfer.CVVSender)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("cvv incorrect")
+	}
+
+	receiver, err := s.Repository.GetAccountByPhone(transfer.PhoneNumberReceiver)
+	if err != nil {
+		return err
+	}
+
+	if sender.Status != "active" {
+		return errors.New("sender card is not active")
+	}
+	if receiver.AccountStatus != "active" {
+		return errors.New("receiver account is not active")
+	}
+	if sender.Currency != receiver.Currency {
+		return errors.New("currencies do not match")
+	}
+
+	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
+	if err != nil {
+		return err
+	}
+
+	return s.Repository.TransferCardToAccount(
+		sender.ID,
+		receiver.ID,
+		newSenderBalance,
+		newReceiverBalance,
+	)
+}
+func (s *Services) MoneyTransferCardToCard(transfer types.MoneyTransferCardToCard) error {
+	var err error
+
+	if transfer.Amount <= 0 {
+		return errors.New("amount must be greater than 0")
+	}
+	if transfer.CardSender == transfer.CardReceiver {
+		return errors.New("cannot transfer to the same card")
+	}
+
+	senderHash := HashData(transfer.CardSender, dbconn.Secret())
+	receiverHash := HashData(transfer.CardReceiver, dbconn.Secret())
+
+	sender, err := s.Repository.GetCardByNumberHash(senderHash)
+	if err != nil {
+		return err
+	}
+
+	receiver, err := s.Repository.GetCardByNumberHash(receiverHash)
+	if err != nil {
+		return err
+	}
+
+	ok, err := CompareHash(sender.CVVHash, transfer.CVVSender)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("cvv incorrect")
+	}
+
+	if sender.Status != "active" {
+		return errors.New("sender card is not active")
+	}
+	if receiver.Status != "active" {
+		return errors.New("receiver card is not active")
+	}
+	if sender.Currency != receiver.Currency {
+		return errors.New("currencies do not match")
+	}
+
+	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
+	if err != nil {
+		return err
+	}
+
+	return s.Repository.TransferCardToCard(
+		sender.ID,
+		receiver.ID,
+		newSenderBalance,
+		newReceiverBalance,
+	)
 }

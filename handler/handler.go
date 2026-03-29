@@ -19,6 +19,7 @@ func NewHandler(engine *gin.Engine, services *service.Services) *Handler {
 		Service: services,
 	}
 }
+
 func (h *Handler) AccountRegistration(c *gin.Context) {
 	input := types.Account{}
 	var err error
@@ -63,7 +64,6 @@ func (h *Handler) CardRegistration(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "registration success"})
 }
-
 func (h *Handler) HasCardByID(c *gin.Context) {
 	input := types.Account{}
 	var err error
@@ -72,22 +72,103 @@ func (h *Handler) HasCardByID(c *gin.Context) {
 		return
 	}
 }
+func (h *Handler) BlockCardByPhone(c *gin.Context) {
+	var input types.BlockCardByPhone
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	if err := h.Service.BlockCardByPhone(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"message": "card blocked successfully",
+	})
+}
+func (h *Handler) ActivateCardByPhone(c *gin.Context) {
+	var input types.BlockCardByPhone
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-c
+	if err := h.Service.ActivateCardByPhone(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"message": "card activated successfully",
+	})
+}
+func (h *Handler) MoneyTransferAccountToAccount(c *gin.Context) {
+	var input types.MoneyTransferAccountToAccount
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
+	if err := h.Service.MoneyTransferAccountToAccount(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"message": "money transfer successful",
+	})
+}
+func (h *Handler) MoneyTransferAccountToCard(c *gin.Context) {
+	var input types.MoneyTransferAccountToCard
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	if err := h.Service.MoneyTransferAccountToCard(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "money transfer successful"})
+}
+func (h *Handler) MoneyTransferCardToAccount(c *gin.Context) {
+	var input types.MoneyTransferCardToAccount
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	if err := h.Service.MoneyTransferCardToAccount(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "money transfer successful"})
+}
+func (h *Handler) MoneyTransferCardToCard(c *gin.Context) {
+	var input types.MoneyTransferCardToCard
 
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	if err := h.Service.MoneyTransferCardToCard(input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{"message": "money transfer successful"})
+}

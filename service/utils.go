@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"net/mail"
+	"project/types"
 	"regexp"
 	"strconv"
 	"strings"
@@ -89,6 +90,8 @@ func HashData(text, secret string) string {
 	hash := hex.EncodeToString(h.Sum(nil))
 	return hash
 }
+
+// GenerateCVV создание СВВ
 func GenerateCVV() string {
 	rand.Seed(time.Now().UnixNano())
 	number := rand.Intn(900) + 100 // 100–999
@@ -114,6 +117,7 @@ func CompareHash(hash string, code string) (bool, error) {
 	return true, nil
 }
 
+// HidePAN Hide PAN
 func HidePAN(s string) string {
 	runes := []rune(s)
 	digitIndex := 0
@@ -122,7 +126,6 @@ func HidePAN(s string) string {
 		if runes[i] == ' ' {
 			continue
 		}
-
 		digitIndex++
 
 		if digitIndex >= 7 && digitIndex <= 12 {
@@ -170,8 +173,8 @@ func ParseName(name, surname string) error {
 }
 
 // IsValidName  парсит стринг
-func IsValidName(s string) bool {
-	for _, r := range s {
+func IsValidName(name string) bool {
+	for _, r := range name {
 		if !(unicode.IsLetter(r) || r == ' ' || r == '-') {
 			return false
 		}
@@ -184,9 +187,11 @@ func ParseMail(email string) error {
 	_, err := mail.ParseAddress(email)
 	return err
 }
-func GetAge(dob string) (int, error) {
+
+// GetAge из точной даты получаем сколько ему полных лет на данный момент
+func GetAge(DateOfBirth string) (int, error) {
 	// парсим дату
-	birthDate, err := time.Parse("2006-01-02", dob)
+	birthDate, err := time.Parse("2006-01-02", DateOfBirth)
 	if err != nil {
 		return 0, fmt.Errorf("неверный формат даты: %v", err)
 	}
@@ -201,4 +206,16 @@ func GetAge(dob string) (int, error) {
 	}
 
 	return age, nil
+}
+
+// TransferMoney Transfer balance
+func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amount types.Balance) (types.Balance, types.Balance, error) {
+	var err error
+	if balanceFirst < amount {
+		err = errors.New("declined: insufficient funds")
+		return 0, 0, err
+	}
+	balanceFirst -= amount
+	balanceSecend += amount
+	return balanceFirst, balanceSecend, err
 }
