@@ -17,20 +17,47 @@ type Card struct {
 	ExpYear        int     `json:"exp_year" gorm:"column:expiration_year"`   // год окончания
 	CVV            string  `json:"cvv" gorm:"-"`                             // CVV код
 	CVVHash        string  `json:"cvv_hash" gorm:"column:cvv_hash"`          // CVV код который мы отправляем в БД
-	CardType       string  `json:"card_type" gorm:"column:card_type"`
-	Balance        float64 `json:"balance" gorm:"column:balance"`    // баланс
-	Currency       string  `json:"currency" gorm:"column:currency"`  // валюта
-	Status         string  `json:"status" gorm:"column:card_status"` // active / blocked
+	Balance        Balance `json:"balance" gorm:"column:balance"`            // баланс
+	Currency       string  `json:"currency" gorm:"column:currency"`          // валюта
+	Status         string  `json:"status" gorm:"column:card_status"`         // active / blocked
 }
 type Account struct {
 	ID            int     `gorm:"id"             json:"id"`             //id
-	FirstName     string  `gorm:"st_name"        json:"first_name"`     //имя на кириллице
+	FirstName     string  `gorm:"first_name"     json:"first_name"`     //имя на кириллице
 	LastName      string  `gorm:"last_name"      json:"last_name"`      //фамилия на кириллице
-	DateOfBirth   string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др
+	DateOfBirth   string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др в формате Год:месяц:день  2000-01-29
 	PhoneNumber   string  `gorm:"phone_number"   json:"phone_number"`   //номер телефона в виде 12 чисел с +ом
 	Email         string  `gorm:"email"          json:"email"`          // gmail
-	Balance       float64 `gorm:"balance"        json:"balance"`        // баланс в виде 15,2 тоесть 13 чисел и 2 после зяпятой
+	Balance       Balance `gorm:"balance"        json:"balance"`        // баланс в виде 15,2 тоесть 13 чисел и 2 после зяпятой
 	Currency      string  `gorm:"currency"       json:"currency"`       //TJS USD EUR
 	Password      string  `gorm:"password"       json:"password"`       // пароль   4 значный
 	AccountStatus string  `gorm:"account_status" json:"account_status"` // active или blocked
+}
+type BlockCardByPhone struct {
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
+}
+type MoneyTransferAccountToAccount struct {
+	PhoneNumberSender   string  `json:"phone_number_sender"`
+	PhoneNumberReceiver string  `json:"phone_number_receiver"`
+	PasswordSender      string  `json:"password_sender"`
+	Amount              Balance `json:"amount"`
+}
+type MoneyTransferAccountToCard struct {
+	PhoneNumberSender string  `json:"phone_number_sender"`
+	CardReceiver      string  `json:"card_receiver"`
+	PasswordSender    string  `json:"password_sender"`
+	Amount            Balance `json:"amount"`
+}
+type MoneyTransferCardToAccount struct {
+	CardSender          string  `json:"card_sender"`
+	PhoneNumberReceiver string  `json:"phone_number_receiver"`
+	CVVSender           string  `json:"cvv_sender"`
+	Amount              Balance `json:"amount"`
+}
+type MoneyTransferCardToCard struct {
+	CardSender   string  `json:"card_sender"`
+	CardReceiver string  `json:"card_receiver"`
+	CVVSender    string  `json:"cvv_sender"`
+	Amount       Balance `json:"amount"`
 }
