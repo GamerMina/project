@@ -1,7 +1,7 @@
 API Endpoints
 Регистрация аккаунта
 
-POST /register_account
+POST /register/account
 
 {
   "first_name": "Anvar",
@@ -14,7 +14,7 @@ POST /register_account
 }
 Регистрация карты
 
-POST /register_card
+POST /register/card
 
 {
   "id": 1
@@ -29,7 +29,7 @@ GET /check
 Управление картой
 Заблокировать карту
 
-POST /block_card
+POST /block/card
 
 {
   "phone_number": "+992900111111",
@@ -37,7 +37,7 @@ POST /block_card
 }
 Активировать карту
 
-POST /activate_card
+POST /activate/card
 
 {
   "phone_number": "+992900111111",
