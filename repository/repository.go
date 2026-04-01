@@ -13,12 +13,12 @@ func NewRepository(conn *gorm.DB) *Repository {
 	return &Repository{Connection: conn}
 }
 
-func (r *Repository) AddCard(card types.Card) error {
-	err := r.Connection.Table("visa_cards").Create(&card).Error
-	return err
-}
 func (r *Repository) AddAccount(account types.Account) error {
 	err := r.Connection.Table("bank_accounts").Create(&account).Error
+	return err
+}
+func (r *Repository) AddCard(card types.Card) error {
+	err := r.Connection.Table("visa_cards").Create(&card).Error
 	return err
 }
 func (r *Repository) GetCard(id int) (types.Card, error) {

@@ -9,7 +9,6 @@ func InitRoutes(r *gin.Engine, H *handler.Handler) {
 	r.GET("/ping", func(context *gin.Context) {
 		context.JSON(200, "pong")
 	})
-	r.GET("/check", H.HasCardByID)
 	register := r.Group("/register")
 	{
 		register.POST("/card", H.CardRegistration)

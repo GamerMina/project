@@ -17,7 +17,7 @@ import (
 	"unicode"
 )
 
-// Проверка по алгоритму Luhn
+// ValidLuhn Проверка по алгоритму Luhn
 func (s *Services) ValidLuhn(number string) (string, error) {
 	sum := 0
 	alternate := false
@@ -81,16 +81,6 @@ func (s *Services) generateCardNumber() (string, error) {
 	return num, nil
 }
 
-// HashData Хеширование
-func HashData(text, secret string) string {
-
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(text))
-
-	hash := hex.EncodeToString(h.Sum(nil))
-	return hash
-}
-
 // GenerateCVV создание СВВ
 func GenerateCVV() string {
 	rand.Seed(time.Now().UnixNano())
@@ -99,41 +89,36 @@ func GenerateCVV() string {
 	return numberString
 }
 
-// HashCVV Хеширование для CVV через bcrypt
-func HashCVV(data string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(data), 4) // просто чтобы быстро работало
+// Детерминированный хеш (для PAN, phone, поиск)
+func HashData(text, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(text))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Хеш пароля
+func HashPassword(text, secret string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(text+secret), bcrypt.DefaultCost)
+	return string(hash)
+}
+
+// Проверка пароля
+func ComparePassword(hash, text, secret string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(text+secret)) == nil
+}
+
+// Хеш CVV
+func HashCVV(cvv string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(cvv), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
 	return string(hash), nil
 }
 
-// CompareHash проверяет хеш от bcrypt сравнивает настоящий хеш_пароля с паролем через bcrypt
-func CompareHash(hash string, code string) (bool, error) {
-	check := bcrypt.CompareHashAndPassword([]byte(hash), []byte(code))
-	if check != nil {
-		return false, errors.New("password is incorrect ")
-	}
-	return true, nil
-}
-
-// HidePAN Hide PAN
-func HidePAN(s string) string {
-	runes := []rune(s)
-	digitIndex := 0
-
-	for i := 0; i < len(runes); i++ {
-		if runes[i] == ' ' {
-			continue
-		}
-		digitIndex++
-
-		if digitIndex >= 7 && digitIndex <= 12 {
-			runes[i] = '*'
-		}
-	}
-	hidenPAN := string(runes)
-	return hidenPAN
+// Проверка CVV
+func CompareCVV(hash, cvv string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(cvv)) == nil
 }
 
 // AddYearsMonths years that months добовляет в функцию
