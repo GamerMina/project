@@ -34,14 +34,21 @@ func (h *Handler) AccountRegistration(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err = h.Service.SaveAccountDB(input); err != nil {
-		c.JSON(200, gin.H{"message": "registration success"})
+	account, err := h.Service.AccountRegistration(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
+	if err = h.Service.SaveAccountDB(account); err != nil {
+		c.JSON(500, err)
+	}
+	c.JSON(200, gin.H{"message": "registration success"})
+
 }
 func (h *Handler) CardRegistration(c *gin.Context) {
 	input := types.Account{}
 	var err error
-	var card types.Card
+	var card types.CardResponse
 	var check bool
 
 	if err = c.ShouldBindJSON(&input); err != nil {

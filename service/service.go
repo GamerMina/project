@@ -17,53 +17,93 @@ func NewServices(rep *repository.Repository) *Services {
 	return &Services{Repository: rep}
 }
 
-func (s *Services) CreateCard(account types.Account) (types.Card, error) {
-	card, err := s.GenerateCard(account)
+func (s *Services) AccountRegistration(input types.Account) (types.Account, error) {
+	age, err := GetAge(input.DateOfBirth)
+
 	if err != nil {
-		return types.Card{}, err
+		return types.Account{}, err
+	}
+	if age < types.MinAgeToCreateAccount {
+		return types.Account{}, errors.New("you are less than 16 ")
+	}
+
+	input.PhoneNumber = ParcePhoneNumber(input.PhoneNumber)
+
+	if err := ParseName(input.FirstName, input.LastName); err != nil {
+		return types.Account{}, err
+	}
+	if err := ParseMail(input.Email); err != nil {
+		return types.Account{}, err
+	}
+
+	input.Password = HashPassword(input.Password, dbconn.Secret())
+	return input, err
+}
+func (s *Services) SaveAccountDB(account types.Account) error {
+	return s.Repository.AddAccount(account)
+}
+func (s *Services) CreateCard(account types.Account) (types.CardResponse, error) {
+	card, panPlain, cvvPlain, err := s.GenerateCard(account)
+	if err != nil {
+		return types.CardResponse{}, err
 	}
 
 	if err := s.Repository.AddCard(card); err != nil {
-		return types.Card{}, err
+		return types.CardResponse{}, err
 	}
 
-	return card, nil
+	resp := types.CardResponse{
+		IDAccount:  card.IDAccount,
+		CardNumber: panPlain,
+		Holder:     card.Holder,
+		ExpMonth:   card.ExpMonth,
+		ExpYear:    card.ExpYear,
+		CVV:        cvvPlain,
+		Balance:    card.Balance,
+		Currency:   card.Currency,
+		Status:     card.Status,
+	}
+
+	return resp, nil
 }
-func (s *Services) GenerateCard(input types.Account) (types.Card, error) {
+func (s *Services) GenerateCard(input types.Account) (types.Card, string, string, error) {
 	var card types.Card
+
 	cardNum, err := s.generateCardNumber()
 	if err != nil {
-		return card, err
+		return types.Card{}, "", "", err
 	}
 
-	hiddenCardNum := HidePAN(cardNum)
+	cvvPlain := GenerateCVV()
 
-	hashCVV, err := HashCVV(GenerateCVV())
+	hashCVV, err := HashCVV(cvvPlain)
 	if err != nil {
-		return card, err
+		return types.Card{}, "", "", err
 	}
 
-	expYear, expMonth := AddYearsMonths(5, 0) //5 лет это пример
+	expYear, expMonth := AddYearsMonths(5, 0)
 
 	card = types.Card{
-		CardNumber:     hiddenCardNum,
 		CardNumberHash: HashData(cardNum, dbconn.Secret()),
 		Holder:         "",
 		ExpMonth:       expMonth,
 		ExpYear:        expYear,
 		CVVHash:        hashCVV,
 	}
+
 	card, err = s.FillingCard(input, card)
 	if err != nil {
-		return types.Card{}, err
+		return types.Card{}, "", "", err
 	}
-	return card, nil
+
+	return card, cardNum, cvvPlain, nil
 }
+
 func (s *Services) FillingCard(input types.Account, card types.Card) (types.Card, error) {
 	id := input.ID // Acount id
-	Holder, err := s.Repository.GetAccount(id)
+	holderAccount, err := s.Repository.GetAccount(id)
 	// превращаю его в тип ИМЯ ФАМИЛИЯ
-	holder := fmt.Sprintf("%s %s", Holder.FirstName, Holder.LastName)
+	holder := fmt.Sprintf("%s %s", holderAccount.FirstName, holderAccount.LastName)
 	holder = strings.ToUpper(holder)
 
 	filler := types.Card{
@@ -81,33 +121,11 @@ func (s *Services) FillingCard(input types.Account, card types.Card) (types.Card
 	}
 	return filler, err
 }
-func (s *Services) AccountRegistration(input types.Account) (types.Account, error) {
-	age, err := GetAge(input.DateOfBirth)
-	if err != nil {
-		return types.Account{}, err
-	}
-	if age < types.MinAgeToCreateAccount {
-		return types.Account{}, errors.New("you are less than 16 ")
-	}
-	input.PhoneNumber = ParcePhoneNumber(input.PhoneNumber)
-	if err := ParseName(input.FirstName, input.LastName); err != nil {
-		return types.Account{}, err
-	}
-	if err := ParseMail(input.Email); err != nil {
-		return types.Account{}, err
-	}
-	input.Password = HashData(input.Password, dbconn.Secret())
 
-	err = s.SaveAccountDB(input)
-
-	return input, err
-}
-func (s *Services) SaveAccountDB(account types.Account) error {
-	return s.Repository.AddAccount(account)
-}
 func (s *Services) SaveCardDB(card types.Card) error {
 	return s.Repository.AddCard(card)
 }
+
 func (s *Services) HasCardByID(id int) bool {
 	var check bool
 	card, err := s.Repository.HasCardByID(id)
@@ -120,6 +138,7 @@ func (s *Services) HasCardByID(id int) bool {
 
 	return check
 }
+
 func (s *Services) BlockCardByPhone(input types.BlockCardByPhone) error {
 	var err error
 
@@ -133,11 +152,7 @@ func (s *Services) BlockCardByPhone(input types.BlockCardByPhone) error {
 		return err
 	}
 
-	ok, err := CompareHash(account.Password, input.Password)
-	if err != nil {
-		return err
-	}
-	if !ok {
+	if ComparePassword(account.Password, input.Password, dbconn.Secret()) == false {
 		return errors.New("password incorrect")
 	}
 
@@ -165,14 +180,9 @@ func (s *Services) ActivateCardByPhone(input types.BlockCardByPhone) error {
 		return err
 	}
 
-	ok, err := CompareHash(account.Password, input.Password)
-	if err != nil {
-		return err
-	}
-	if !ok {
+	if ComparePassword(account.Password, input.Password, dbconn.Secret()) == false {
 		return errors.New("password incorrect")
 	}
-
 	if account.Status != "active" {
 		return errors.New("account is not active")
 	}
@@ -184,6 +194,7 @@ func (s *Services) ActivateCardByPhone(input types.BlockCardByPhone) error {
 
 	return nil
 }
+
 func (s *Services) MoneyTransferAccountToAccount(transfer types.MoneyTransferAccountToAccount) error {
 	var err error
 	//парсим номер
@@ -204,11 +215,8 @@ func (s *Services) MoneyTransferAccountToAccount(transfer types.MoneyTransferAcc
 		return err
 	}
 
-	ok, err := CompareHash(sender.Password, transfer.PasswordSender)
-	if err != nil {
-		return err
-	}
-	if !ok {
+	ok := ComparePassword(sender.Password, transfer.PasswordSender, dbconn.Secret())
+	if ok == false {
 		return errors.New("password incorrect")
 	}
 
@@ -240,14 +248,10 @@ func (s *Services) MoneyTransferAccountToCard(transfer types.MoneyTransferAccoun
 		return err
 	}
 
-	check, err := CompareHash(sender.Password, transfer.PasswordSender)
-	if err != nil {
-		return err
-	}
-
-	if !check {
+	if ComparePassword(sender.Password, transfer.PasswordSender, dbconn.Secret()) == false {
 		return errors.New("password incorrect")
 	}
+
 	// прверящаем наш инпут в хеш чтобы найты данные в бд
 	cardHash := HashData(transfer.CardReceiver, dbconn.Secret())
 
@@ -285,11 +289,7 @@ func (s *Services) MoneyTransferCardToAccount(transfer types.MoneyTransferCardTo
 		return err
 	}
 	// тут еще проверяем его Cvv
-	ok, err := CompareHash(sender.CVVHash, transfer.CVVSender)
-	if err != nil {
-		return err
-	}
-	if !ok {
+	if CompareCVV(sender.CVVHash, transfer.CVVSender) == false {
 		return errors.New("cvv incorrect")
 	}
 
@@ -332,14 +332,9 @@ func (s *Services) MoneyTransferCardToCard(transfer types.MoneyTransferCardToCar
 		return err
 	}
 
-	ok, err := CompareHash(sender.CVVHash, transfer.CVVSender)
-	if err != nil {
-		return err
+	if CompareCVV(sender.CVVHash, transfer.CVVSender) == false {
+		return errors.New("cvv incorrect")
 	}
-	if !ok {
-		return errors.New("cvv is incorrect")
-	}
-
 	if err := ValidateTransactionAfterGettingData(sender.Status, receiver.Status, sender.Currency, receiver.Currency); err != nil {
 		return err
 	}

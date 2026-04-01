@@ -21,17 +21,28 @@ type Card struct {
 	Currency       string  `json:"currency" gorm:"column:currency"`          // валюта
 	Status         string  `json:"status" gorm:"column:card_status"`         // active / blocked
 }
+type CardResponse struct {
+	IDAccount  int     `json:"id_account"`
+	CardNumber string  `json:"card_number"`
+	Holder     string  `json:"holder"`
+	ExpMonth   int     `json:"exp_month"`
+	ExpYear    int     `json:"exp_year"`
+	CVV        string  `json:"cvv"`
+	Balance    Balance `json:"balance"`
+	Currency   string  `json:"currency"`
+	Status     string  `json:"status"`
+}
 type Account struct {
-	ID          int     `gorm:"id"             json:"id"`             //id
-	FirstName   string  `gorm:"first_name"     json:"first_name"`     //имя на кириллице
-	LastName    string  `gorm:"last_name"      json:"last_name"`      //фамилия на кириллице
-	DateOfBirth string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др в формате Год:месяц:день  2000-01-29
-	PhoneNumber string  `gorm:"phone_number"   json:"phone_number"`   //номер телефона в виде 12 чисел с +ом
-	Email       string  `gorm:"email"          json:"email"`          // gmail
-	Balance     Balance `gorm:"balance"        json:"balance"`        // баланс в виде 15,2 тоесть 13 чисел и 2 после зяпятой
-	Currency    string  `gorm:"currency"       json:"currency"`       //TJS USD EUR
-	Password    string  `gorm:"password"       json:"password"`       // пароль   4 значный
-	Status      string  `gorm:"account_status" json:"account_status"` // active или blocked
+	ID          int     `gorm:"column:id"             json:"id"`
+	FirstName   string  `gorm:"column:first_name"     json:"first_name"`
+	LastName    string  `gorm:"column:last_name"      json:"last_name"`
+	DateOfBirth string  `gorm:"column:date_of_birth"  json:"date_of_birth"`
+	PhoneNumber string  `gorm:"column:phone_number"   json:"phone_number"`
+	Email       string  `gorm:"column:email"          json:"email"`
+	Balance     Balance `gorm:"column:balance"        json:"balance"`
+	Currency    string  `gorm:"column:currency"       json:"currency"`
+	Password    string  `gorm:"column:password"       json:"password"`
+	Status      string  `gorm:"column:account_status" json:"account_status"`
 }
 type BlockCardByPhone struct {
 	PhoneNumber string `json:"phone_number"`
