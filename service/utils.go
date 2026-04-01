@@ -220,18 +220,32 @@ func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amou
 	return balanceFirst, balanceSecend, err
 }
 
-func ValidateAccountToAccountTransfer(senderPhone string, receiverPhone string, amount types.Balance) error {
-	if senderPhone == "" {
-		return errors.New("invalid sender phone")
+func ValidateTransfer(sender string, receiver string, amount types.Balance) error {
+	if sender == "" {
+		return errors.New("invalid sender")
 	}
-	if receiverPhone == "" {
-		return errors.New("invalid receiver phone")
+	if receiver == "" {
+		return errors.New("invalid receiver")
 	}
 	if amount <= 0 {
 		return errors.New("amount must be positive")
 	}
-	if senderPhone == receiverPhone {
+	if sender == receiver {
 		return errors.New("cannot transfer to yourself")
+	}
+	return nil
+}
+
+// ValidateTransactionAfterGettingData статус сендер статус ресивер, валюта сендер валюта ресивер для проверок
+func ValidateTransactionAfterGettingData(sender string, receiver string, curencySender string, curencyReceiver string) error {
+	if sender != "active" {
+		return errors.New("sender account or card is not active")
+	}
+	if receiver != "active" {
+		return errors.New("receiver account or  card is not active")
+	}
+	if curencySender != curencyReceiver {
+		return errors.New("currencies do not match")
 	}
 	return nil
 }

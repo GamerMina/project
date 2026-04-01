@@ -129,7 +129,7 @@ func (s *Services) BlockCardByPhone(input types.BlockCardByPhone) error {
 		return errors.New("password incorrect")
 	}
 
-	if account.AccountStatus != "active" {
+	if account.Status != "active" {
 		return errors.New("account is not active")
 	}
 
@@ -161,7 +161,7 @@ func (s *Services) ActivateCardByPhone(input types.BlockCardByPhone) error {
 		return errors.New("password incorrect")
 	}
 
-	if account.AccountStatus != "active" {
+	if account.Status != "active" {
 		return errors.New("account is not active")
 	}
 
@@ -178,11 +178,7 @@ func (s *Services) MoneyTransferAccountToAccount(transfer types.MoneyTransferAcc
 	transfer.PhoneNumberSender = ParcePhoneNumber(transfer.PhoneNumberSender)
 	transfer.PhoneNumberReceiver = ParcePhoneNumber(transfer.PhoneNumberReceiver)
 	// проверяем на наличие ошибок
-	if err := ValidateAccountToAccountTransfer(
-		transfer.PhoneNumberSender,
-		transfer.PhoneNumberReceiver,
-		transfer.Amount,
-	); err != nil {
+	if err := ValidateTransfer(transfer.PhoneNumberSender, transfer.PhoneNumberReceiver, transfer.Amount); err != nil {
 		return err
 	}
 	//получаем данные отправителя
@@ -204,27 +200,15 @@ func (s *Services) MoneyTransferAccountToAccount(transfer types.MoneyTransferAcc
 		return errors.New("password incorrect")
 	}
 
-	if sender.AccountStatus != "active" {
-		return errors.New("sender account is not active")
+	if err := ValidateTransactionAfterGettingData(sender.Status, receiver.Status, sender.Currency, receiver.Currency); err != nil {
+		return err
 	}
-	if receiver.AccountStatus != "active" {
-		return errors.New("receiver account is not active")
-	}
-	if sender.Currency != receiver.Currency {
-		return errors.New("currencies do not match")
-	}
-
 	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
 	if err != nil {
 		return err
 	}
 	//сохраняем все это дело
-	err = s.Repository.TransferMoneyTransaction(
-		sender.ID,
-		receiver.ID,
-		newSenderBalance,
-		newReceiverBalance,
-	)
+	err = s.Repository.TransferMoneyTransaction(sender.ID, receiver.ID, newSenderBalance, newReceiverBalance)
 	if err != nil {
 		return err
 	}
@@ -236,23 +220,20 @@ func (s *Services) MoneyTransferAccountToCard(transfer types.MoneyTransferAccoun
 
 	transfer.PhoneNumberSender = ParcePhoneNumber(transfer.PhoneNumberSender)
 
-	if transfer.PhoneNumberSender == "" {
-		return errors.New("invalid sender phone")
+	if err := ValidateTransfer(transfer.PhoneNumberSender, transfer.CardReceiver, transfer.Amount); err != nil {
+		return err
 	}
-	if transfer.Amount <= 0 {
-		return errors.New("amount must be greater than 0")
-	}
-
 	sender, err := s.Repository.GetAccountByPhone(transfer.PhoneNumberSender)
 	if err != nil {
 		return err
 	}
 
-	ok, err := CompareHash(sender.Password, transfer.PasswordSender)
+	check, err := CompareHash(sender.Password, transfer.PasswordSender)
 	if err != nil {
 		return err
 	}
-	if !ok {
+
+	if !check {
 		return errors.New("password incorrect")
 	}
 	// прверящаем наш инпут в хеш чтобы найты данные в бд
@@ -263,16 +244,9 @@ func (s *Services) MoneyTransferAccountToCard(transfer types.MoneyTransferAccoun
 		return err
 	}
 
-	if sender.AccountStatus != "active" {
-		return errors.New("sender account is not active")
+	if err := ValidateTransactionAfterGettingData(sender.Status, receiver.Status, sender.Currency, receiver.Currency); err != nil {
+		return err
 	}
-	if receiver.Status != "active" {
-		return errors.New("receiver card is not active")
-	}
-	if sender.Currency != receiver.Currency {
-		return errors.New("currencies do not match")
-	}
-
 	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
 	if err != nil {
 		return err
@@ -289,13 +263,9 @@ func (s *Services) MoneyTransferCardToAccount(transfer types.MoneyTransferCardTo
 
 	transfer.PhoneNumberReceiver = ParcePhoneNumber(transfer.PhoneNumberReceiver)
 
-	if transfer.PhoneNumberReceiver == "" {
-		return errors.New("invalid receiver phone")
+	if err := ValidateTransfer(transfer.CardSender, transfer.PhoneNumberReceiver, transfer.Amount); err != nil {
+		return err
 	}
-	if transfer.Amount <= 0 {
-		return errors.New("amount must be greater than 0")
-	}
-
 	cardHash := HashData(transfer.CardSender, dbconn.Secret())
 
 	sender, err := s.Repository.GetCardByNumberHash(cardHash)
@@ -316,16 +286,9 @@ func (s *Services) MoneyTransferCardToAccount(transfer types.MoneyTransferCardTo
 		return err
 	}
 
-	if sender.Status != "active" {
-		return errors.New("sender card is not active")
+	if err := ValidateTransactionAfterGettingData(sender.Status, receiver.Status, sender.Currency, receiver.Currency); err != nil {
+		return err
 	}
-	if receiver.AccountStatus != "active" {
-		return errors.New("receiver account is not active")
-	}
-	if sender.Currency != receiver.Currency {
-		return errors.New("currencies do not match")
-	}
-
 	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
 	if err != nil {
 		return err
@@ -341,13 +304,9 @@ func (s *Services) MoneyTransferCardToAccount(transfer types.MoneyTransferCardTo
 func (s *Services) MoneyTransferCardToCard(transfer types.MoneyTransferCardToCard) error {
 	var err error
 
-	if transfer.Amount <= 0 {
-		return errors.New("amount must be greater than 0")
+	if err := ValidateTransfer(transfer.CardSender, transfer.CardReceiver, transfer.Amount); err != nil {
+		return err
 	}
-	if transfer.CardSender == transfer.CardReceiver {
-		return errors.New("cannot transfer to the same card")
-	}
-
 	senderHash := HashData(transfer.CardSender, dbconn.Secret())
 	receiverHash := HashData(transfer.CardReceiver, dbconn.Secret())
 
@@ -366,17 +325,11 @@ func (s *Services) MoneyTransferCardToCard(transfer types.MoneyTransferCardToCar
 		return err
 	}
 	if !ok {
-		return errors.New("cvv incorrect")
+		return errors.New("cvv is incorrect")
 	}
 
-	if sender.Status != "active" {
-		return errors.New("sender card is not active")
-	}
-	if receiver.Status != "active" {
-		return errors.New("receiver card is not active")
-	}
-	if sender.Currency != receiver.Currency {
-		return errors.New("currencies do not match")
+	if err := ValidateTransactionAfterGettingData(sender.Status, receiver.Status, sender.Currency, receiver.Currency); err != nil {
+		return err
 	}
 
 	newSenderBalance, newReceiverBalance, err := TransferMoney(sender.Balance, receiver.Balance, transfer.Amount)
@@ -384,10 +337,7 @@ func (s *Services) MoneyTransferCardToCard(transfer types.MoneyTransferCardToCar
 		return err
 	}
 
-	return s.Repository.TransferCardToCard(
-		sender.ID,
-		receiver.ID,
-		newSenderBalance,
-		newReceiverBalance,
-	)
+	err = s.Repository.TransferCardToCard(sender.ID, receiver.ID, newSenderBalance, newReceiverBalance)
+
+	return err
 }
