@@ -17,6 +17,18 @@ func NewServices(rep *repository.Repository) *Services {
 	return &Services{Repository: rep}
 }
 
+func (s *Services) CreateCard(account types.Account) (types.Card, error) {
+	card, err := s.GenerateCard(account)
+	if err != nil {
+		return types.Card{}, err
+	}
+
+	if err := s.Repository.AddCard(card); err != nil {
+		return types.Card{}, err
+	}
+
+	return card, nil
+}
 func (s *Services) GenerateCard(input types.Account) (types.Card, error) {
 	var card types.Card
 	cardNum, err := s.generateCardNumber()
