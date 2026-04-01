@@ -208,7 +208,7 @@ func GetAge(DateOfBirth string) (int, error) {
 	return age, nil
 }
 
-// TransferMoney Transfer balance
+// TransferMoney Transfer баланс именно 1 фунцией чтобы не было проблем по типо того что на 1 аккауете деньги снялись а на 2 не прибавились при каких либо проблемах с нашей стороны
 func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amount types.Balance) (types.Balance, types.Balance, error) {
 	var err error
 	if balanceFirst < amount {
@@ -218,4 +218,34 @@ func TransferMoney(balanceFirst types.Balance, balanceSecend types.Balance, amou
 	balanceFirst -= amount
 	balanceSecend += amount
 	return balanceFirst, balanceSecend, err
+}
+
+func ValidateTransfer(sender string, receiver string, amount types.Balance) error {
+	if sender == "" {
+		return errors.New("invalid sender")
+	}
+	if receiver == "" {
+		return errors.New("invalid receiver")
+	}
+	if amount <= 0 {
+		return errors.New("amount must be positive")
+	}
+	if sender == receiver {
+		return errors.New("cannot transfer to yourself")
+	}
+	return nil
+}
+
+// ValidateTransactionAfterGettingData статус сендер статус ресивер, валюта сендер валюта ресивер для проверок
+func ValidateTransactionAfterGettingData(sender string, receiver string, curencySender string, curencyReceiver string) error {
+	if sender != "active" {
+		return errors.New("sender account or card is not active")
+	}
+	if receiver != "active" {
+		return errors.New("receiver account or  card is not active")
+	}
+	if curencySender != curencyReceiver {
+		return errors.New("currencies do not match")
+	}
+	return nil
 }

@@ -22,16 +22,16 @@ type Card struct {
 	Status         string  `json:"status" gorm:"column:card_status"`         // active / blocked
 }
 type Account struct {
-	ID            int     `gorm:"id"             json:"id"`             //id
-	FirstName     string  `gorm:"first_name"     json:"first_name"`     //имя на кириллице
-	LastName      string  `gorm:"last_name"      json:"last_name"`      //фамилия на кириллице
-	DateOfBirth   string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др в формате Год:месяц:день  2000-01-29
-	PhoneNumber   string  `gorm:"phone_number"   json:"phone_number"`   //номер телефона в виде 12 чисел с +ом
-	Email         string  `gorm:"email"          json:"email"`          // gmail
-	Balance       Balance `gorm:"balance"        json:"balance"`        // баланс в виде 15,2 тоесть 13 чисел и 2 после зяпятой
-	Currency      string  `gorm:"currency"       json:"currency"`       //TJS USD EUR
-	Password      string  `gorm:"password"       json:"password"`       // пароль   4 значный
-	AccountStatus string  `gorm:"account_status" json:"account_status"` // active или blocked
+	ID          int     `gorm:"id"             json:"id"`             //id
+	FirstName   string  `gorm:"first_name"     json:"first_name"`     //имя на кириллице
+	LastName    string  `gorm:"last_name"      json:"last_name"`      //фамилия на кириллице
+	DateOfBirth string  `gorm:"date_of_birth"  json:"date_of_birth"`  // Др в формате Год:месяц:день  2000-01-29
+	PhoneNumber string  `gorm:"phone_number"   json:"phone_number"`   //номер телефона в виде 12 чисел с +ом
+	Email       string  `gorm:"email"          json:"email"`          // gmail
+	Balance     Balance `gorm:"balance"        json:"balance"`        // баланс в виде 15,2 тоесть 13 чисел и 2 после зяпятой
+	Currency    string  `gorm:"currency"       json:"currency"`       //TJS USD EUR
+	Password    string  `gorm:"password"       json:"password"`       // пароль   4 значный
+	Status      string  `gorm:"account_status" json:"account_status"` // active или blocked
 }
 type BlockCardByPhone struct {
 	PhoneNumber string `json:"phone_number"`

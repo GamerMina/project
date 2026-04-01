@@ -40,29 +40,32 @@ func (h *Handler) AccountRegistration(c *gin.Context) {
 }
 func (h *Handler) CardRegistration(c *gin.Context) {
 	input := types.Account{}
-	card := types.Card{}
-	var check bool
 	var err error
-	// нам надо только id
+	var card types.Card
+	var check bool
+
 	if err = c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if check = h.Service.HasCardByID(input.ID); check == true {
+
+	if check = h.Service.HasCardByID(input.ID); check {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "card already exist",
 		})
 		return
 	}
-	if card, err = h.Service.GenerateCard(input); err != nil {
+
+	card, err = h.Service.CreateCard(input)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.Service.SaveCardDB(card); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"message": "registration success"})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "card created",
+		"card":    card,
+	})
 }
 func (h *Handler) HasCardByID(c *gin.Context) {
 	input := types.Account{}
