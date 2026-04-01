@@ -21,9 +21,8 @@ import (
 func (s *Services) ValidLuhn(number string) (string, error) {
 	sum := 0
 	alternate := false
-
 	for i := len(number) - 1; i >= 0; i-- {
-		n := int(number[i] - '0') // а также можно минус 48 сделать потомучто ASCII таблица
+		n := int(number[i] - '0')
 		if alternate {
 			n *= 2
 			if n > 9 {
@@ -33,10 +32,10 @@ func (s *Services) ValidLuhn(number string) (string, error) {
 		sum += n
 		alternate = !alternate
 	}
-
-	if sum != 0 {
-		return "", errors.New("проверку Luhn не пройденна ")
+	if sum%10 != 0 {
+		return "", errors.New("проверка Luhn не пройдена")
 	}
+
 	return number, nil
 }
 
@@ -61,23 +60,26 @@ func (s *Services) generateLuhnCheckDigit(number string) (int, error) {
 
 // Генерация 15-значного номера карты
 func (s *Services) generateCardNumber() (string, error) {
-	rand.Seed(time.Now().UnixNano())
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var number string
 
-	// Генерируем первые 15 цифр
 	for i := 0; i < 15; i++ {
-		number += fmt.Sprintf("%d", rand.Intn(10))
+		number += fmt.Sprintf("%d", r.Intn(10))
 	}
-	println("Сгенерированный номер карты:", number)
-	// Вычисляем контрольную цифру
+
 	checkDigit, err := s.generateLuhnCheckDigit(number)
 	if err != nil {
 		return "", err
 	}
+
 	num := number + fmt.Sprintf("%d", checkDigit)
-	num, err = s.ValidLuhn(num)
-	//TODO: пересмотреть обработку ошибок
+
+	_, err = s.ValidLuhn(num)
+	if err != nil {
+		return "", err
+	}
+
 	return num, nil
 }
 

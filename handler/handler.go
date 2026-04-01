@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"project/service"
 	"project/types"
@@ -68,7 +69,7 @@ func (h *Handler) CardRegistration(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	log.Printf("Handler card=%+v\n", card)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "card created",
 		"card":    card,
